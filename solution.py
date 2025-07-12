@@ -1,50 +1,67 @@
-import collections
-
 def solve():
-    N = int(input())
-    adj = collections.defaultdict(list)
-    for _ in range(N - 1):
-        u, v, w = map(int, input().split())
-        adj[u - 1].append((v - 1, w))
-        adj[v - 1].append((u - 1, w))
+    R = int(input())
+    C = int(input())
+    K = int(input())
+    S = [input() for _ in range(R)]
 
-    P, Q = map(int, input().split())
-    P -= 1
-    Q -= 1
+    f = [[0] * 26 for _ in range(R)]
+    for i in range(R):
+        lens = [0] * 26
+        for j in range(C):
+            char = S[i][j]
+            char_code = ord(char) - ord('a')
+            max_prev_len = 0
+            for c_prev_code in range(26):
+                if abs(char_code - c_prev_code) <= K:
+                    max_prev_len = max(max_prev_len, lens[c_prev_code])
+            lens[char_code] = max(lens[char_code], 1 + max_prev_len)
+        f[i] = lens
 
+    h = [[[0] * 26 for _ in range(26)] for _ in range(R)]
+    for i in range(R):
+        for c_prev_code in range(26):
+            lens = [0] * 26
+            for j in range(C):
+                char = S[i][j]
+                char_code = ord(char) - ord('a')
+                max_len_ending_at_j = 0
+                if abs(char_code - c_prev_code) <= K:
+                    max_len_ending_at_j = 1
 
+                max_prev_len_in_s = 0
+                for c_in_s_code in range(26):
+                    if abs(char_code - c_in_s_code) <= K:
+                        max_prev_len_in_s = max(max_prev_len_in_s, lens[c_in_s_code])
 
-    xor_from_p = [-1] * N
-    xor_from_q = [-1] * N
+                if max_prev_len_in_s > 0:
+                    max_len_ending_at_j = max(max_len_ending_at_j, 1 + max_prev_len_in_s)
 
-    def dfs(u, current_xor_sum, parent, target_array, graph_adj):
-        target_array[u] = current_xor_sum
-        for v, weight in graph_adj[u]:
-            if v != parent:
-                dfs(v, current_xor_sum ^ weight, u, target_array, graph_adj)
+                lens[char_code] = max(lens[char_code], max_len_ending_at_j)
+            h[i][c_prev_code] = lens
 
-    dfs(P, 0, -1, xor_from_p, adj)
-    dfs(Q, 0, -1, xor_from_q, adj)
+    dp = [[0] * 26 for _ in range(1 << R)]
 
-    if xor_from_p[Q] == 0:
-        print("YES")
-        return
-    teleport_dest_to_q_xors = set()
-    for v_teleport_dest_idx in range(N):
-        if v_teleport_dest_idx == Q: 
-            continue
-        if xor_from_q[v_teleport_dest_idx] != -1: 
-            teleport_dest_to_q_xors.add(xor_from_q[v_teleport_dest_idx])
+    for i in range(R):
+        for c in range(26):
+            dp[1 << i][c] = f[i][c]
 
+    for mask in range(1, 1 << R):
+        for i in range(R):
+            if mask & (1 << i):
+                prev_mask = mask ^ (1 << i)
+                if prev_mask == 0:
+                    continue
+                for c_end in range(26):
+                    for c_prev in range(26):
+                        if dp[prev_mask][c_prev] > 0 and h[i][c_prev][c_end] > 0:
+                            dp[mask][c_end] = max(dp[mask][c_end], dp[prev_mask][c_prev] + h[i][c_prev][c_end])
 
-    for u_current_idx in range(N):
-        
-        if xor_from_p[u_current_idx] != -1:
-            if xor_from_p[u_current_idx] in teleport_dest_to_q_xors:
-                print("YES")
-                return
+    max_len = 0
+    for mask in range(1, 1 << R):
+        for c in range(26):
+            max_len = max(max_len, dp[mask][c])
 
-    print("NO")
+    print(max_len)
 
 if __name__ == '__main__':
     solve()
