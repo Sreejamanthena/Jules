@@ -13,25 +13,22 @@ class Solution:
         
         dp = [0] * (A + 1)
 
+        dp[1] = 0
         for i in range(2, A + 1):
-            # Initialize with the baseline cost, which is coming from dp[1].
-            # This is equivalent to selecting line 1 and pasting i-1 times.
-            # Cost = 1 (select) + (i-1) (pastes) = i.
-            # Or, from the DP relation, dp[i] = dp[1] + i/1 = 0 + i = i.
-            dp[i] = i
+            # Case 1: Add one line from the previous state.
+            # This corresponds to selecting 1 line and pasting it once.
+            # Cost is dp[i-1] + 1 (select) + 1 (paste) = dp[i-1] + 2.
+            cost_from_prev = dp[i-1] + 2
 
-            # Iterate through divisors of i to find more optimal paths
-            # using the "select all" operation.
+            # Case 2: Use "select all" from a factor j.
+            # Cost is dp[j] + i/j.
+            cost_from_factor = i # Initialize with the baseline cost from factor 1.
             import math
             for j in range(2, int(math.sqrt(i)) + 1):
                 if i % j == 0:
-                    factor1 = j
-                    factor2 = i // j
+                    factor = i // j
+                    cost_from_factor = min(cost_from_factor, dp[j] + factor, dp[factor] + j)
 
-                    # Cost from dp[factor1] + cost of operation
-                    dp[i] = min(dp[i], dp[factor1] + factor2)
-
-                    # Cost from dp[factor2] + cost of operation
-                    dp[i] = min(dp[i], dp[factor2] + factor1)
+            dp[i] = min(cost_from_prev, cost_from_factor)
 
         return dp[A]
