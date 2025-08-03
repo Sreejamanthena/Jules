@@ -1,3 +1,5 @@
+import math
+
 class Solution:
     """
     Solves the findEnergy problem.
@@ -13,22 +15,37 @@ class Solution:
         
         dp = [0] * (A + 1)
 
-        dp[1] = 0
         for i in range(2, A + 1):
-            # Case 1: Add one line from the previous state.
-            # This corresponds to selecting 1 line and pasting it once.
-            # Cost is dp[i-1] + 1 (select) + 1 (paste) = dp[i-1] + 2.
-            cost_from_prev = dp[i-1] + 2
+            # Initialize with a safe upper bound (select 1, paste i-1 times)
+            dp[i] = i
 
-            # Case 2: Use "select all" from a factor j.
-            # Cost is dp[j] + i/j.
-            cost_from_factor = i # Initialize with the baseline cost from factor 1.
-            import math
-            for j in range(2, int(math.sqrt(i)) + 1):
-                if i % j == 0:
-                    factor = i // j
-                    cost_from_factor = min(cost_from_factor, dp[j] + factor, dp[factor] + j)
+            # Iterate through all possible previous states j
+            for j in range(1, i):
+                lines_to_add = i - j
 
-            dp[i] = min(cost_from_prev, cost_from_factor)
+                # Operation: Select All
+                # This is only possible if lines_to_add is a multiple of j
+                if lines_to_add % j == 0:
+                    m = lines_to_add // j
+                    cost = dp[j] + 1 + m # 1 for select all, m for pastes
+                    dp[i] = min(dp[i], cost)
+
+                # Operation: Select k from top
+                # Iterate through all possible selection sizes k
+                # k must be a divisor of lines_to_add
+                # k must be less than or equal to j
+                for k in range(1, int(math.sqrt(lines_to_add)) + 1):
+                    if lines_to_add % k == 0:
+                        # First factor pair: k and m1
+                        m1 = lines_to_add // k
+                        if k <= j:
+                            cost1 = dp[j] + k + m1
+                            dp[i] = min(dp[i], cost1)
+
+                        # Second factor pair: m1 and k
+                        k2 = lines_to_add // k
+                        if k2 != k and k2 <= j:
+                            cost2 = dp[j] + k2 + k
+                            dp[i] = min(dp[i], cost2)
 
         return dp[A]
