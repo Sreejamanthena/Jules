@@ -1,50 +1,37 @@
-import collections
-
-def solve():
-    N = int(input())
-    adj = collections.defaultdict(list)
-    for _ in range(N - 1):
-        u, v, w = map(int, input().split())
-        adj[u - 1].append((v - 1, w))
-        adj[v - 1].append((u - 1, w))
-
-    P, Q = map(int, input().split())
-    P -= 1
-    Q -= 1
-
-
-
-    xor_from_p = [-1] * N
-    xor_from_q = [-1] * N
-
-    def dfs(u, current_xor_sum, parent, target_array, graph_adj):
-        target_array[u] = current_xor_sum
-        for v, weight in graph_adj[u]:
-            if v != parent:
-                dfs(v, current_xor_sum ^ weight, u, target_array, graph_adj)
-
-    dfs(P, 0, -1, xor_from_p, adj)
-    dfs(Q, 0, -1, xor_from_q, adj)
-
-    if xor_from_p[Q] == 0:
-        print("YES")
-        return
-    teleport_dest_to_q_xors = set()
-    for v_teleport_dest_idx in range(N):
-        if v_teleport_dest_idx == Q: 
-            continue
-        if xor_from_q[v_teleport_dest_idx] != -1: 
-            teleport_dest_to_q_xors.add(xor_from_q[v_teleport_dest_idx])
-
-
-    for u_current_idx in range(N):
+class Solution:
+    """
+    Solves the findEnergy problem.
+    """
+    def findEnergy(self, A):
+        """
+        Calculates the minimum energy to produce A lines of text.
+        :param A: An integer representing the target number of lines.
+        :return: An integer representing the minimum energy required.
+        """
+        if A == 1:
+            return 0
         
-        if xor_from_p[u_current_idx] != -1:
-            if xor_from_p[u_current_idx] in teleport_dest_to_q_xors:
-                print("YES")
-                return
+        dp = [0] * (A + 1)
 
-    print("NO")
+        for i in range(2, A + 1):
+            # Initialize with the baseline cost, which is coming from dp[1].
+            # This is equivalent to selecting line 1 and pasting i-1 times.
+            # Cost = 1 (select) + (i-1) (pastes) = i.
+            # Or, from the DP relation, dp[i] = dp[1] + i/1 = 0 + i = i.
+            dp[i] = i
 
-if __name__ == '__main__':
-    solve()
+            # Iterate through divisors of i to find more optimal paths
+            # using the "select all" operation.
+            import math
+            for j in range(2, int(math.sqrt(i)) + 1):
+                if i % j == 0:
+                    factor1 = j
+                    factor2 = i // j
+
+                    # Cost from dp[factor1] + cost of operation
+                    dp[i] = min(dp[i], dp[factor1] + factor2)
+
+                    # Cost from dp[factor2] + cost of operation
+                    dp[i] = min(dp[i], dp[factor2] + factor1)
+
+        return dp[A]
