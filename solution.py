@@ -1,50 +1,62 @@
-import collections
+import heapq
 
-def solve():
-    N = int(input())
-    adj = collections.defaultdict(list)
-    for _ in range(N - 1):
-        u, v, w = map(int, input().split())
-        adj[u - 1].append((v - 1, w))
-        adj[v - 1].append((u - 1, w))
+class Solution:
+  """
+  Solves the most frequent books problem.
+  """
+  def mostFrequentBooks(self, A, B):
+    """
+    Calculates the highest number of copies for any single book at each step.
 
-    P, Q = map(int, input().split())
-    P -= 1
-    Q -= 1
+    Args:
+      A: A list of integers representing book IDs.
+      B: A list of integers representing the change in book copies.
 
+    Returns:
+      A list of integers where each element is the maximum number of copies
+      of any book after the corresponding step.
+    """
+    book_counts = {}
+    count_freq = {}
+    # Use a min-heap to simulate a max-heap by storing negative counts
+    counts_max_heap = []
+    result = []
 
+    for i in range(len(A)):
+        book_id = A[i]
+        change = B[i]
 
-    xor_from_p = [-1] * N
-    xor_from_q = [-1] * N
+        # --- Update based on the old count of the book ---
+        old_count = book_counts.get(book_id, 0)
+        if old_count > 0:
+            count_freq[old_count] -= 1
+            # Stale entries in the heap will be cleaned up lazily later.
 
-    def dfs(u, current_xor_sum, parent, target_array, graph_adj):
-        target_array[u] = current_xor_sum
-        for v, weight in graph_adj[u]:
-            if v != parent:
-                dfs(v, current_xor_sum ^ weight, u, target_array, graph_adj)
+        # --- Update the book's count ---
+        new_count = old_count + change
+        book_counts[book_id] = new_count
 
-    dfs(P, 0, -1, xor_from_p, adj)
-    dfs(Q, 0, -1, xor_from_q, adj)
+        # --- Update based on the new count of the book ---
+        if new_count > 0:
+            current_freq = count_freq.get(new_count, 0)
+            # If this count is appearing for the first time, add it to the heap.
+            if current_freq == 0:
+                heapq.heappush(counts_max_heap, -new_count)
+            count_freq[new_count] = current_freq + 1
 
-    if xor_from_p[Q] == 0:
-        print("YES")
-        return
-    teleport_dest_to_q_xors = set()
-    for v_teleport_dest_idx in range(N):
-        if v_teleport_dest_idx == Q: 
-            continue
-        if xor_from_q[v_teleport_dest_idx] != -1: 
-            teleport_dest_to_q_xors.add(xor_from_q[v_teleport_dest_idx])
+        # --- Find the current maximum count ---
+        # Clean up stale entries from the top of the heap.
+        # A stale entry is a count that is no longer present for any book.
+        while counts_max_heap and count_freq.get(-counts_max_heap[0], 0) == 0:
+            heapq.heappop(counts_max_heap)
 
+        if not counts_max_heap:
+            result.append(0)
+        else:
+            result.append(-counts_max_heap[0])
 
-    for u_current_idx in range(N):
-        
-        if xor_from_p[u_current_idx] != -1:
-            if xor_from_p[u_current_idx] in teleport_dest_to_q_xors:
-                print("YES")
-                return
+    return result
 
-    print("NO")
-
+# The verification block has been removed for final submission.
 if __name__ == '__main__':
-    solve()
+    pass
