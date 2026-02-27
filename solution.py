@@ -1,50 +1,76 @@
-import collections
+import sys
+from collections import deque
 
 def solve():
-    N = int(input())
-    adj = collections.defaultdict(list)
-    for _ in range(N - 1):
-        u, v, w = map(int, input().split())
-        adj[u - 1].append((v - 1, w))
-        adj[v - 1].append((u - 1, w))
-
-    P, Q = map(int, input().split())
-    P -= 1
-    Q -= 1
-
-
-
-    xor_from_p = [-1] * N
-    xor_from_q = [-1] * N
-
-    def dfs(u, current_xor_sum, parent, target_array, graph_adj):
-        target_array[u] = current_xor_sum
-        for v, weight in graph_adj[u]:
-            if v != parent:
-                dfs(v, current_xor_sum ^ weight, u, target_array, graph_adj)
-
-    dfs(P, 0, -1, xor_from_p, adj)
-    dfs(Q, 0, -1, xor_from_q, adj)
-
-    if xor_from_p[Q] == 0:
-        print("YES")
+    # Use fast I/O
+    input_data = sys.stdin.read().split()
+    if not input_data:
         return
-    teleport_dest_to_q_xors = set()
-    for v_teleport_dest_idx in range(N):
-        if v_teleport_dest_idx == Q: 
-            continue
-        if xor_from_q[v_teleport_dest_idx] != -1: 
-            teleport_dest_to_q_xors.add(xor_from_q[v_teleport_dest_idx])
 
+    it = iter(input_data)
+    try:
+        N = int(next(it))
+        M = int(next(it))
+        source = int(next(it))
+        target = int(next(it))
 
-    for u_current_idx in range(N):
+        cursed = []
+        # The cursed status can be N space-separated integers or a single string of length N
+        # We try to handle both by reading until we have N integers
+        while len(cursed) < N:
+            val = next(it)
+            if len(val) > 1 and len(cursed) == 0:
+                cursed.extend([int(c) for c in val])
+            else:
+                cursed.append(int(val))
+
+        # In case we read more than N due to the string logic
+        cursed = cursed[:N]
+
+        adj = [[] for _ in range(N)]
+        for _ in range(M):
+            try:
+                u = int(next(it))
+                v = int(next(it))
+                if u < N and v < N:
+                    adj[u].append(v)
+                    adj[v].append(u)
+            except StopIteration:
+                break
+    except StopIteration:
+        pass
+
+    # Basic checks
+    if source < 0 or source >= N or target < 0 or target >= N:
+        print("-1")
+        return
+
+    if cursed[source] == 1 or cursed[target] == 1:
+        print("-1")
+        return
+
+    if source == target:
+        print("0")
+        return
+
+    # BFS for shortest path
+    queue = deque([(source, 0)])
+    visited = [False] * N
+    visited[source] = True
+
+    while queue:
+        u, dist = queue.popleft()
         
-        if xor_from_p[u_current_idx] != -1:
-            if xor_from_p[u_current_idx] in teleport_dest_to_q_xors:
-                print("YES")
-                return
+        if u == target:
+            print(dist)
+            return
 
-    print("NO")
+        for v in adj[u]:
+            if not visited[v] and cursed[v] == 0:
+                visited[v] = True
+                queue.append((v, dist + 1))
 
-if __name__ == '__main__':
+    print("-1")
+
+if __name__ == "__main__":
     solve()
